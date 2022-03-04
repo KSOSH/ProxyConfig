@@ -5,7 +5,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  Vcl.ExtCtrls, Vcl.ComCtrls, Registry, Vcl.StdCtrls, Vcl.Buttons, Vcl.Menus;
+  Vcl.ExtCtrls, Vcl.ComCtrls, Registry, Vcl.StdCtrls, Vcl.Buttons,
+  Vcl.Menus, Setting;
 
 type
   TMainForm = class(TForm)
@@ -24,6 +25,7 @@ type
     N4: TMenuItem;
     PopupMenu2: TPopupMenu;
     N2: TMenuItem;
+    Edit1: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure GetWindTimer(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
@@ -32,6 +34,7 @@ type
     procedure N4Click(Sender: TObject);
     procedure N1Click(Sender: TObject);
     procedure TrayIcon1DblClick(Sender: TObject);
+    procedure N2Click(Sender: TObject);
   private
     { Private declarations }
     function GetCheckProxy():Integer;
@@ -94,12 +97,21 @@ begin
     Reg.WriteString('ProxyOverride', ProxyOverride);
     Reg.WriteString('ProxyServer', Proxy);
     Reg.WriteInteger('ProxyEnable', 1);
-  end;
-  if RE_2.Checked then
+    RE_1.Checked := False;
+    RE_2.Checked := True;
+    Memo1.Lines.Add('++++');
+  end
+  else
   begin
-    Reg.WriteString('ProxyOverride', ProxyOverride);
-    Reg.WriteString('ProxyServer', Proxy);
-    Reg.WriteInteger('ProxyEnable', 0);
+    if RE_2.Checked then
+    begin
+      Reg.WriteString('ProxyOverride', ProxyOverride);
+      Reg.WriteString('ProxyServer', Proxy);
+      Reg.WriteInteger('ProxyEnable', 0);
+      RE_1.Checked := True;
+      RE_2.Checked := False;
+      Memo1.Lines.Add('----');
+    end;
   end;
   GetWind.Enabled := True;
 end;
@@ -135,6 +147,7 @@ begin
     Vers := False;
     Proxy := StringReplace(ProxyVar, '%ip:port%', '10.0.63.52:3128', [rfReplaceAll, rfIgnoreCase]);
   end;
+  Memo1.Lines.Add(Proxy);
   Reg := TRegistry.Create;
   Reg.RootKey := HKEY_CURRENT_USER;
   Reg.OpenKey(CurrentPath, true);
@@ -160,6 +173,11 @@ end;
 procedure TMainForm.N1Click(Sender: TObject);
 begin
   ChangeApplicationVisibility;
+end;
+
+procedure TMainForm.N2Click(Sender: TObject);
+begin
+  SettingForm.ShowModal;
 end;
 
 procedure TMainForm.N4Click(Sender: TObject);

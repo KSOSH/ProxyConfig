@@ -3,7 +3,8 @@ program ProxyConfig;
 uses
   Windows,
   Vcl.Forms,
-  Main in 'Main.pas' {MainForm};
+  Main in 'Main.pas' {MainForm},
+  Setting in 'Setting.pas' {SettingForm};
 
 {$R *.res}
 var
@@ -16,7 +17,8 @@ begin
     Exit;
   end;
   Application.MainFormOnTaskbar := True;
-  Application.Title := 'Proxy Configuration App';
+  Application.Title := 'Proxy Configuration';
   Application.CreateForm(TMainForm, MainForm);
+  Application.CreateForm(TSettingForm, SettingForm);
   Application.Run;
 end.

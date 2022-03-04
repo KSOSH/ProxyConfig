@@ -13,10 +13,11 @@ object MainForm: TMainForm
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  Position = poDesktopCenter
   OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 16
   object StatusBar1: TStatusBar
     Left = 0
     Top = 365
@@ -32,7 +33,6 @@ object MainForm: TMainForm
         Width = 50
       end>
     PopupMenu = PopupMenu2
-    ExplicitLeft = -8
   end
   object BitBtn1: TBitBtn
     Left = 223
@@ -90,10 +90,19 @@ object MainForm: TMainForm
       OnClick = Button1Click
     end
   end
+  object Edit1: TEdit
+    Left = 8
+    Top = 295
+    Width = 177
+    Height = 21
+    TabOrder = 5
+    Text = 'Edit1'
+  end
   object GetWind: TTimer
     Enabled = False
     OnTimer = GetWindTimer
-    Left = 160
+    Left = 200
+    Top = 96
   end
   object TrayIcon1: TTrayIcon
     Animate = True
@@ -6470,10 +6479,12 @@ object MainForm: TMainForm
     PopupMenu = PopupMenu1
     Visible = True
     OnClick = TrayIcon1DblClick
-    Left = 128
+    Left = 168
+    Top = 96
   end
   object PopupMenu1: TPopupMenu
-    Left = 192
+    Left = 232
+    Top = 96
     object N1: TMenuItem
       Caption = #1057#1074#1077#1088#1085#1091#1090#1100
       OnClick = N1Click
@@ -6487,9 +6498,11 @@ object MainForm: TMainForm
     end
   end
   object PopupMenu2: TPopupMenu
-    Left = 224
+    Left = 264
+    Top = 96
     object N2: TMenuItem
       Caption = #1053#1072#1089#1090#1088#1086#1081#1082#1080
+      OnClick = N2Click
     end
   end
 end

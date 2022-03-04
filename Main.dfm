@@ -31,6 +31,8 @@ object MainForm: TMainForm
       item
         Width = 50
       end>
+    PopupMenu = PopupMenu2
+    ExplicitLeft = -8
   end
   object BitBtn1: TBitBtn
     Left = 223
@@ -6467,6 +6469,7 @@ object MainForm: TMainForm
       000000000000000000008001000080010000C0030000E0070000F81F0000}
     PopupMenu = PopupMenu1
     Visible = True
+    OnClick = TrayIcon1DblClick
     Left = 128
   end
   object PopupMenu1: TPopupMenu
@@ -6481,6 +6484,12 @@ object MainForm: TMainForm
     object N4: TMenuItem
       Caption = #1047#1072#1082#1088#1099#1090#1100
       OnClick = N4Click
+    end
+  end
+  object PopupMenu2: TPopupMenu
+    Left = 224
+    object N2: TMenuItem
+      Caption = #1053#1072#1089#1090#1088#1086#1081#1082#1080
     end
   end
 end

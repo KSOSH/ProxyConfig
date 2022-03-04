@@ -22,6 +22,8 @@ type
     N1: TMenuItem;
     N3: TMenuItem;
     N4: TMenuItem;
+    PopupMenu2: TPopupMenu;
+    N2: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure GetWindTimer(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
@@ -29,6 +31,7 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure N4Click(Sender: TObject);
     procedure N1Click(Sender: TObject);
+    procedure TrayIcon1DblClick(Sender: TObject);
   private
     { Private declarations }
     function GetCheckProxy():Integer;
@@ -163,6 +166,19 @@ procedure TMainForm.N4Click(Sender: TObject);
 begin
   MainCanClose := True;
   MainForm.Close;
+end;
+
+procedure TMainForm.TrayIcon1DblClick(Sender: TObject);
+begin
+  if Not Visible then
+  begin
+    ShowWindow(Application.Handle, SW_SHOW);
+    Show;
+    ShowWindow(Handle, WinApi.Windows.SW_NORMAL);
+    Application.Restore;
+    Application.BringToFront;
+    N1.Caption := 'Свернуть';
+  end;
 end;
 
 procedure TMainForm.ChangeApplicationVisibility;

@@ -6,46 +6,52 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.ExtCtrls, Vcl.ComCtrls, Registry, Vcl.StdCtrls, Vcl.Buttons,
-  Vcl.Menus, Setting;
+  Vcl.Menus, Setting, StrUtils, System.Types, System.RegularExpressions,
+  System.ImageList, Vcl.ImgList, SBPro, Vcl.XPMan;
 
 type
   TMainForm = class(TForm)
-    StatusBar1: TStatusBar;
     GetWind: TTimer;
     BitBtn1: TBitBtn;
     TrayIcon1: TTrayIcon;
     RE_1: TRadioButton;
     RE_2: TRadioButton;
-    Memo1: TMemo;
-    Button1: TButton;
-    Panel1: TPanel;
     PopupMenu1: TPopupMenu;
     N1: TMenuItem;
     N3: TMenuItem;
     N4: TMenuItem;
     PopupMenu2: TPopupMenu;
     N2: TMenuItem;
-    Edit1: TEdit;
+    Memo1: TListBox;
+    ImageList1: TImageList;
+    StatusBar1: TStatusBarPro;
+    Timer1: TTimer;
+    XPManifest1: TXPManifest;
     procedure FormCreate(Sender: TObject);
     procedure GetWindTimer(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure N4Click(Sender: TObject);
     procedure N1Click(Sender: TObject);
     procedure TrayIcon1DblClick(Sender: TObject);
     procedure N2Click(Sender: TObject);
+    procedure Timer1Timer(Sender: TObject);
   private
     { Private declarations }
     function GetCheckProxy():Integer;
     procedure ChangeApplicationVisibility;
     procedure ApplicationMinimize(Sender: TObject);
+    function WinVerNum: integer;
+    function ReadSetting: String;
+    function SetProxy: String;
+    procedure WMQueryEndSession(var Message: TWMQueryEndSession); message WM_QUERYENDSESSION;
   public
     { Public declarations }
   end;
 
 const
   CurrentPath = 'Software\Microsoft\Windows\CurrentVersion\Internet Settings';
+  SettingPath = 'Software\ProxyConfigApp';
   ProxyOverride = '*.localhost;*.school;*.localschool;*.hostname;<local>';
   ProxyVar = 'http=%ip:port%;https=%ip:port%;ftp=%ip:port%';
 var
@@ -53,13 +59,64 @@ var
   i: integer;
   Vers: Boolean;
   Reg: TRegistry;
-  Proxy: String;
+  RegSetting: TRegistry;
   MainCanClose: Boolean;
+  RegIP: TRegEx;
+  RegPort: TRegEx;
+  Proxy: String;
 implementation
 
 {$R *.dfm}
 
-function WinVerNum: integer;
+function TMainForm.ReadSetting: String;
+var
+  tProxy: String;
+begin
+  RegIP := TRegEx.Create('^\d{1,3}\.\d{1,3}\.\d{1,3}.\d{1,3}$');
+  RegPort := TRegEx.Create('^\d{1,4}$');
+  RegSetting := TRegistry.Create;
+  RegSetting.RootKey := HKEY_CURRENT_USER;
+  RegSetting.OpenKey(SettingPath, true);
+  tProxy := RegSetting.ReadString('ProxyServer');
+  if tProxy = '' then
+  begin
+    tProxy := '127.0.0.1:80';
+  end;
+  Values := SplitString(tProxy, ':');
+  if Length(Values) < 2 then
+     Values[1] := '80';
+  if Not RegIP.IsMatch(Values[0]) then
+     Values[0] := '127.0.0.1';
+  if Not RegPort.IsMatch(Values[1]) then
+     Values[1] := '80';
+  tProxy := Values[0] + ':' + Values[1];
+  RegSetting.WriteString('ProxyServer', tProxy);
+  RegSetting.Free;
+  Result := tProxy;
+end;
+
+function TMainForm.SetProxy: String;
+var
+  sProxy: String;
+begin
+  sProxy := ReadSetting;
+  Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Load Config: ' + sProxy);
+  if WinVerNum >= 62 then
+  begin
+    // Windows 8 и Старше
+    Vers := True;
+    Result := sProxy;
+  end
+  else
+  begin
+    // Младше Windows 8
+    Vers := False;
+    Result := StringReplace(ProxyVar, '%ip:port%', sProxy, [rfReplaceAll, rfIgnoreCase]);
+  end;
+  SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
+end;
+
+function TMainForm.WinVerNum: integer;
 var
   ver: TOSVersionInfo;
 begin
@@ -73,6 +130,13 @@ begin
     Result := 1;
 end;
 
+procedure TMainForm.WMQueryEndSession(var Message: TWMQueryEndSession);
+begin
+inherited;
+  MainCanClose := True;
+  MainForm.Close;
+end;
+
 function TMainForm.GetCheckProxy: Integer;
 var
   ProxyEnable: Integer;
@@ -81,10 +145,12 @@ begin
   if ProxyEnable = 1 then
   begin
     StatusBar1.Panels[1].Text := 'Подключён';
+    StatusBar1.Panels[1].ImageIndex := 1;
   end
   else
   begin
     StatusBar1.Panels[1].Text := 'Отключён';
+    StatusBar1.Panels[1].ImageIndex := 0;
   end;
   Result := ProxyEnable;
 end;
@@ -99,7 +165,7 @@ begin
     Reg.WriteInteger('ProxyEnable', 1);
     RE_1.Checked := False;
     RE_2.Checked := True;
-    Memo1.Lines.Add('++++');
+    Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Proxy Подключен');
   end
   else
   begin
@@ -110,15 +176,11 @@ begin
       Reg.WriteInteger('ProxyEnable', 0);
       RE_1.Checked := True;
       RE_2.Checked := False;
-      Memo1.Lines.Add('----');
+      Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Proxy Отключен');
     end;
   end;
   GetWind.Enabled := True;
-end;
-
-procedure TMainForm.Button1Click(Sender: TObject);
-begin
-  Memo1.Lines.Add(IntToStr(WinVerNum));
+  SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
 end;
 
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -133,26 +195,15 @@ var
   ProxyEnable: Integer;
 begin
   Application.OnMinimize := ApplicationMinimize;
-  Memo1.Lines.Clear;
+  Memo1.Items.Clear;
   MainCanClose := False;
-  if WinVerNum >= 62 then
-  begin
-    // Windows 8 и Старше
-    Vers := True;
-    Proxy := '10.0.63.52:3128';
-  end
-  else
-  begin
-    // Младше Windows 8
-    Vers := False;
-    Proxy := StringReplace(ProxyVar, '%ip:port%', '10.0.63.52:3128', [rfReplaceAll, rfIgnoreCase]);
-  end;
-  Memo1.Lines.Add(Proxy);
+
+  Proxy := SetProxy;
+
   Reg := TRegistry.Create;
   Reg.RootKey := HKEY_CURRENT_USER;
   Reg.OpenKey(CurrentPath, true);
-  ProxyEnable := Reg.ReadInteger('ProxyEnable');
-  if ProxyEnable = 1 then
+  if Reg.ReadInteger('ProxyEnable') = 1 then
   begin
     RE_2.Checked := True;
     RE_1.Checked := False;
@@ -177,13 +228,32 @@ end;
 
 procedure TMainForm.N2Click(Sender: TObject);
 begin
-  SettingForm.ShowModal;
+  if SettingForm.ShowModal = 1 then
+  begin
+    Proxy := SetProxy;
+    if Reg.ReadInteger('ProxyEnable') = 1 then
+    begin
+      Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Настройки будут приняты после переподключения');
+      Reg.WriteString('ProxyOverride', ProxyOverride);
+      Reg.WriteString('ProxyServer', Proxy);
+      Reg.WriteInteger('ProxyEnable', 0);
+      RE_1.Checked := True;
+      RE_2.Checked := False;
+      Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Proxy Отключен');
+      SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
+    end;
+  end;
 end;
 
 procedure TMainForm.N4Click(Sender: TObject);
 begin
   MainCanClose := True;
   MainForm.Close;
+end;
+
+procedure TMainForm.Timer1Timer(Sender: TObject);
+begin
+  StatusBar1.Panels.Items[2].Text := FormatDateTime('dd.mm.yyyy hh:mm:ss', Now);
 end;
 
 procedure TMainForm.TrayIcon1DblClick(Sender: TObject);

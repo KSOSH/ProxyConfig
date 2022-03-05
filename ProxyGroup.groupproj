@@ -6,7 +6,7 @@
         <Projects Include="ProxyConfig.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="..\IP_ADRESS.dproj">
+        <Projects Include="IP_ADRESS.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -27,13 +27,13 @@
         <MSBuild Projects="ProxyConfig.dproj" Targets="Make"/>
     </Target>
     <Target Name="IP_ADRESS">
-        <MSBuild Projects="..\IP_ADRESS.dproj"/>
+        <MSBuild Projects="IP_ADRESS.dproj"/>
     </Target>
     <Target Name="IP_ADRESS:Clean">
-        <MSBuild Projects="..\IP_ADRESS.dproj" Targets="Clean"/>
+        <MSBuild Projects="IP_ADRESS.dproj" Targets="Clean"/>
     </Target>
     <Target Name="IP_ADRESS:Make">
-        <MSBuild Projects="..\IP_ADRESS.dproj" Targets="Make"/>
+        <MSBuild Projects="IP_ADRESS.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
         <CallTarget Targets="ProxyConfig;IP_ADRESS"/>

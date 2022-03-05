@@ -14,6 +14,7 @@ object SettingForm: TSettingForm
   Font.Style = []
   OldCreateOrder = False
   Position = poDesktopCenter
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 16
   object Label1: TLabel
@@ -30,7 +31,7 @@ object SettingForm: TSettingForm
     Height = 16
     Caption = #1055#1086#1088#1090
   end
-  object IPAdr: TIPAdress98
+  object IpAdress: TIPAdress98
     Left = 8
     Top = 27
     Width = 121
@@ -38,17 +39,17 @@ object SettingForm: TSettingForm
     ActiveField = 3
     MinIPAdress = '0.0.0.0'
     MaxIPAdress = '255.255.255.255'
-    IPAdress = '127.0.0.1'
+    IPAdress = '0.0.0.0'
     ParentColor = False
     TabOrder = 0
     TabStop = True
   end
-  object NumberBox1: TNumberBox
+  object Port: TNumberBox
     Left = 144
     Top = 27
     Width = 73
     Height = 24
-    MinValue = 80.000000000000000000
+    MinValue = 1.000000000000000000
     MaxValue = 9999.000000000000000000
     MaxLength = 4
     TabOrder = 1
@@ -62,6 +63,7 @@ object SettingForm: TSettingForm
     Kind = bkOK
     NumGlyphs = 2
     TabOrder = 2
+    OnClick = BitBtn1Click
   end
   object BitBtn2: TBitBtn
     Left = 120
@@ -71,5 +73,9 @@ object SettingForm: TSettingForm
     Kind = bkCancel
     NumGlyphs = 2
     TabOrder = 3
+  end
+  object XPManifest1: TXPManifest
+    Left = 176
+    Top = 8
   end
 end

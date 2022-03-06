@@ -20,15 +20,15 @@ object SettingForm: TSettingForm
   object Label1: TLabel
     Left = 8
     Top = 5
-    Width = 110
-    Height = 16
+    Width = 82
+    Height = 13
     Caption = 'IP '#1072#1076#1088#1077#1089' '#1055#1088#1086#1082#1089#1080
   end
   object Label2: TLabel
     Left = 144
     Top = 5
-    Width = 32
-    Height = 16
+    Width = 25
+    Height = 13
     Caption = #1055#1086#1088#1090
   end
   object IpAdress: TIPAdress98

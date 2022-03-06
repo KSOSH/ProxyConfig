@@ -7,7 +7,8 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.ExtCtrls, Vcl.ComCtrls, Registry, Vcl.StdCtrls, Vcl.Buttons,
   Vcl.Menus, Setting, StrUtils, System.Types, System.RegularExpressions,
-  System.ImageList, Vcl.ImgList, SBPro, Vcl.XPMan;
+  System.ImageList, Vcl.ImgList, SBPro, Vcl.XPMan, IdBaseComponent, IdComponent,
+  IdTCPConnection, IdTCPClient, IdHTTP;
 
 type
   TMainForm = class(TForm)
@@ -27,13 +28,14 @@ type
     StatusBar1: TStatusBarPro;
     Timer1: TTimer;
     XPManifest1: TXPManifest;
+    Grops: TGroupBox;
     procedure FormCreate(Sender: TObject);
     procedure GetWindTimer(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure N4Click(Sender: TObject);
     procedure N1Click(Sender: TObject);
-    procedure TrayIcon1DblClick(Sender: TObject);
+    procedure TrayIcon1Click(Sender: TObject);
     procedure N2Click(Sender: TObject);
     procedure Timer1Timer(Sender: TObject);
   private
@@ -45,6 +47,7 @@ type
     function ReadSetting: String;
     function SetProxy: String;
     procedure WMQueryEndSession(var Message: TWMQueryEndSession); message WM_QUERYENDSESSION;
+    procedure LogApp(S: String);
   public
     { Public declarations }
   end;
@@ -54,6 +57,8 @@ const
   SettingPath = 'Software\ProxyConfigApp';
   ProxyOverride = '*.localhost;*.school;*.localschool;*.hostname;<local>';
   ProxyVar = 'http=%ip:port%;https=%ip:port%;ftp=%ip:port%';
+  ProxyTestURL = 'https://sp-kolosok.minobr63.ru/proxy.txt';
+
 var
   MainForm: TMainForm;
   i: integer;
@@ -68,6 +73,42 @@ implementation
 
 {$R *.dfm}
 
+{*
+  ** Функция запроса данных с сайта
+  ** Определить с какого...
+*}
+function TryWebContentToInt(const AURL: string): Boolean;
+var
+  S: string;
+  http: TIdHTTP;
+begin
+  http := TIdHTTP.Create(nil);
+  try
+    http.HandleRedirects := True;
+    try
+      S := http.Get(AURL);
+      Result := True;
+    except
+      Result := False;
+    end;
+  finally
+    http.Free;
+  end;
+end;
+
+{*
+  ** Функция Логирования
+*}
+procedure TMainForm.LogApp(S: String);
+begin
+  Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > ' + S);
+  SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
+end;
+
+{*
+  ** Функция чтения настроек программы
+  ** Возвращает IP и Порт
+*}
 function TMainForm.ReadSetting: String;
 var
   tProxy: String;
@@ -83,7 +124,8 @@ begin
     tProxy := '127.0.0.1:80';
   end;
   Values := SplitString(tProxy, ':');
-  if Length(Values) < 2 then
+  {* Если что-то ни так, то приводим к дефолту *}
+  if Length(Values) < 1 then
      Values[1] := '80';
   if Not RegIP.IsMatch(Values[0]) then
      Values[0] := '127.0.0.1';
@@ -95,12 +137,17 @@ begin
   Result := tProxy;
 end;
 
+{*
+  ** Возвращаем строку прокси.
+  ** Зависит от версии Windows
+  ** У Windows 7 и ниже прокси применятся к http://, https://, ftp://
+*}
 function TMainForm.SetProxy: String;
 var
   sProxy: String;
 begin
   sProxy := ReadSetting;
-  Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Load Config: ' + sProxy);
+  LogApp('Load Config: ' + sProxy);
   if WinVerNum >= 62 then
   begin
     // Windows 8 и Старше
@@ -113,9 +160,11 @@ begin
     Vers := False;
     Result := StringReplace(ProxyVar, '%ip:port%', sProxy, [rfReplaceAll, rfIgnoreCase]);
   end;
-  SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
 end;
 
+{*
+  ** Определение версии Windows
+*}
 function TMainForm.WinVerNum: integer;
 var
   ver: TOSVersionInfo;
@@ -130,6 +179,9 @@ begin
     Result := 1;
 end;
 
+{*
+  ** Если Выход из системы или завершение работы
+*}
 procedure TMainForm.WMQueryEndSession(var Message: TWMQueryEndSession);
 begin
 inherited;
@@ -137,6 +189,9 @@ inherited;
   MainForm.Close;
 end;
 
+{*
+  ** Состояние настроек прокси
+*}
 function TMainForm.GetCheckProxy: Integer;
 var
   ProxyEnable: Integer;
@@ -165,7 +220,7 @@ begin
     Reg.WriteInteger('ProxyEnable', 1);
     RE_1.Checked := False;
     RE_2.Checked := True;
-    Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Proxy Подключен');
+    LogApp('Proxy Подключен');
   end
   else
   begin
@@ -176,11 +231,10 @@ begin
       Reg.WriteInteger('ProxyEnable', 0);
       RE_1.Checked := True;
       RE_2.Checked := False;
-      Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Proxy Отключен');
+      LogApp('Proxy Отключен');
     end;
   end;
   GetWind.Enabled := True;
-  SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
 end;
 
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -193,6 +247,7 @@ end;
 procedure TMainForm.FormCreate(Sender: TObject);
 var
   ProxyEnable: Integer;
+  I: Integer;
 begin
   Application.OnMinimize := ApplicationMinimize;
   Memo1.Items.Clear;
@@ -216,16 +271,25 @@ begin
   GetWind.Enabled := True;
 end;
 
+{*
+  ** Временная функция
+*}
 procedure TMainForm.GetWindTimer(Sender: TObject);
 begin
   GetCheckProxy();
 end;
 
+{*
+  ** Развернуть/Свернуть программу по клику в PopupMenu
+*}
 procedure TMainForm.N1Click(Sender: TObject);
 begin
   ChangeApplicationVisibility;
 end;
 
+{*
+  ** Настройки программы
+*}
 procedure TMainForm.N2Click(Sender: TObject);
 begin
   if SettingForm.ShowModal = 1 then
@@ -233,30 +297,38 @@ begin
     Proxy := SetProxy;
     if Reg.ReadInteger('ProxyEnable') = 1 then
     begin
-      Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Настройки будут приняты после переподключения');
+      LogApp('Настройки будут приняты после переподключения');
       Reg.WriteString('ProxyOverride', ProxyOverride);
       Reg.WriteString('ProxyServer', Proxy);
       Reg.WriteInteger('ProxyEnable', 0);
       RE_1.Checked := True;
       RE_2.Checked := False;
-      Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > Proxy Отключен');
-      SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
+      LogApp('Proxy Отключен');
     end;
   end;
 end;
 
+{*
+  ** Закрытие Ghjuhfvvs
+*}
 procedure TMainForm.N4Click(Sender: TObject);
 begin
   MainCanClose := True;
   MainForm.Close;
 end;
 
+{*
+  ** Выводим текущее время
+*}
 procedure TMainForm.Timer1Timer(Sender: TObject);
 begin
   StatusBar1.Panels.Items[2].Text := FormatDateTime('dd.mm.yyyy hh:mm:ss', Now);
 end;
 
-procedure TMainForm.TrayIcon1DblClick(Sender: TObject);
+{*
+  ** Отобразить программу по клику на иконке в трее
+*}
+procedure TMainForm.TrayIcon1Click(Sender: TObject);
 begin
   if Not Visible then
   begin
@@ -266,9 +338,13 @@ begin
     Application.Restore;
     Application.BringToFront;
     N1.Caption := 'Свернуть';
+    N1.ImageIndex := 3;
   end;
 end;
 
+{*
+  ** Развернуть и свернуть программу
+*}
 procedure TMainForm.ChangeApplicationVisibility;
 begin
   if Visible then
@@ -276,6 +352,7 @@ begin
     ShowWindow(Application.Handle,SW_HIDE);
     Hide;
     N1.Caption := 'Развернуть';
+    N1.ImageIndex := 4;
   end
   else
   begin
@@ -285,9 +362,13 @@ begin
     Application.Restore;
     Application.BringToFront;
     N1.Caption := 'Свернуть';
+    N1.ImageIndex := 3;
   end;
 end;
 
+{*
+  ** Если программа сворачивается
+*}
 procedure TMainForm.ApplicationMinimize(Sender: TObject);
 begin
   ChangeApplicationVisibility;

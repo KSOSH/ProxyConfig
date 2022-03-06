@@ -46,7 +46,6 @@ procedure TSettingForm.BitBtn1Click(Sender: TObject);
 begin
   if Port.ValueInt = 1 then
     Port.ValueInt := 80;
-  ShowMessage(IpAdress.IPAdress + ':' + IntToStr(Port.ValueInt));
   RegIP := TRegEx.Create('^\d{1,3}\.\d{1,3}\.\d{1,3}.\d{1,3}$');
   RegPort := TRegEx.Create('^\d{1,4}$');
   Reg := TRegistry.Create;
@@ -70,7 +69,6 @@ begin
     tmpProxy := '127.0.0.1:80';
     Reg.WriteString('ProxyServer', tmpProxy);
   end;
-  ShowMessage(tmpProxy);
   Values := SplitString(tmpProxy, ':');
   if Length(Values) < 2 then
      Values[1] := '80';

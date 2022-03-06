@@ -96,11 +96,12 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
-        <VerInfo_Keys>CompanyName=ГБОУ СОШ пос. Комсомольский;FileDescription=Proxy Configuration;FileVersion=1.0.0.0;InternalName=Proxy Configuration;LegalCopyright=©ProjectSoft 2008 - all right reserved;LegalTrademarks=®ProjectSoft;OriginalFilename=ProxyConfig.exe;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=Proxy Configuration;ProductVersion=1.0.0.0;Comments=Включение/Отключение Proxy для подключение к ЕСПД на компьютерах ГБОУ СОШ пос. Комсомольский</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=ГБОУ СОШ пос. Комсомольский;FileDescription=Прокси ЕСПД;FileVersion=1.0.0.0;InternalName=Прокси ЕСПД;LegalCopyright=©ProjectSoft 2008 - all right reserved;LegalTrademarks=®ProjectSoft;OriginalFilename=ProxyConfig.exe;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=Прокси ЕСПД;ProductVersion=1.0.0.0;Comments=Включение/Отключение Proxy для подключение к ЕСПД на компьютерах ГБОУ СОШ пос. Комсомольский</VerInfo_Keys>
         <Icon_MainIcon>ProxyConfig_Icon.ico</Icon_MainIcon>
         <UWP_DelphiLogo44>res\images\44.png</UWP_DelphiLogo44>
         <UWP_DelphiLogo150>res\images\150.png</UWP_DelphiLogo150>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <Manifest_File>(None)</Manifest_File>
     </PropertyGroup>
     <Import Project="0001.optset" Condition="'$(Cfg_2_Win32)'!='' And Exists('0001.optset')"/>
     <ItemGroup>
@@ -113,6 +114,7 @@
         <DCCReference Include="Setting.pas">
             <Form>SettingForm</Form>
         </DCCReference>
+        <DCCReference Include="ThreadUnit.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

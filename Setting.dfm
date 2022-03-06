@@ -3,7 +3,7 @@ object SettingForm: TSettingForm
   Top = 0
   BorderIcons = [biSystemMenu]
   BorderStyle = bsDialog
-  Caption = 'Settings'
+  Caption = #1053#1072#1089#1090#1088#1086#1081#1082#1072' '#1045#1057#1055#1044
   ClientHeight = 94
   ClientWidth = 223
   Color = clBtnFace

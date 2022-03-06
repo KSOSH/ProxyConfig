@@ -3,7 +3,7 @@ object MainForm: TMainForm
   Top = 0
   BorderIcons = [biSystemMenu, biMinimize]
   BorderStyle = bsSingle
-  Caption = 'Proxy Configuration'
+  Caption = #1055#1088#1086#1082#1089#1080' '#1045#1057#1055#1044
   ClientHeight = 262
   ClientWidth = 375
   Color = clBtnFace
@@ -40,7 +40,7 @@ object MainForm: TMainForm
       end
       item
         ImageIndex = 0
-        Text = #1054#1090#1082#1083#1102#1095#1105#1085
+        Text = ' '#1054#1090#1082#1083#1102#1095#1105#1085
         Width = 100
       end
       item
@@ -59,10 +59,10 @@ object MainForm: TMainForm
     Caption = #1055#1086#1076#1082#1083#1102#1095#1080#1090#1100'/'#1054#1090#1082#1083#1102#1095#1080#1090#1100
     TabOrder = 2
     object BitBtn1: TBitBtn
-      Left = 275
-      Top = 25
+      Left = 274
+      Top = 17
       Width = 75
-      Height = 25
+      Height = 40
       Cursor = crHandPoint
       Caption = '&Ok'
       NumGlyphs = 2

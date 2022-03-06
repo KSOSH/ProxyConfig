@@ -15,7 +15,7 @@ unit SBPro;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
+  Windows, Messages, SysUtils, Classes, System.UITypes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.Menus, Vcl.ComCtrls {$IFDEF COMPILER4_UP}, Vcl.ImgList {$ENDIF};
 
 {$IFNDEF COMPILER4_UP}

@@ -7,8 +7,7 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.ExtCtrls, Vcl.ComCtrls, Registry, Vcl.StdCtrls, Vcl.Buttons,
   Vcl.Menus, Setting, StrUtils, System.Types, System.RegularExpressions,
-  System.ImageList, Vcl.ImgList, SBPro, Vcl.XPMan, IdBaseComponent, IdComponent,
-  IdTCPConnection, IdTCPClient, IdHTTP;
+  System.ImageList, Vcl.ImgList, SBPro, Vcl.XPMan, ShellAPI, ThreadUnit;
 
 type
   TMainForm = class(TForm)
@@ -47,9 +46,11 @@ type
     function ReadSetting: String;
     function SetProxy: String;
     procedure WMQueryEndSession(var Message: TWMQueryEndSession); message WM_QUERYENDSESSION;
-    procedure LogApp(S: String);
+    procedure OnEnabledTerminate( Sender: TObject );
+    procedure OnDisabledTerminate( Sender: TObject );
   public
     { Public declarations }
+    procedure LogApp(S: String; WR: Boolean);
   end;
 
 const
@@ -69,40 +70,32 @@ var
   RegIP: TRegEx;
   RegPort: TRegEx;
   Proxy: String;
+  MyThread: ExecuteCMD;
 implementation
 
 {$R *.dfm}
 
-{*
-  ** Функция запроса данных с сайта
-  ** Определить с какого...
-*}
-function TryWebContentToInt(const AURL: string): Boolean;
-var
-  S: string;
-  http: TIdHTTP;
-begin
-  http := TIdHTTP.Create(nil);
-  try
-    http.HandleRedirects := True;
-    try
-      S := http.Get(AURL);
-      Result := True;
-    except
-      Result := False;
-    end;
-  finally
-    http.Free;
-  end;
-end;
 
 {*
   ** Функция Логирования
 *}
-procedure TMainForm.LogApp(S: String);
+procedure TMainForm.LogApp(S: String; WR: Boolean);
+var
+  f : TextFile;
+  text   : string;
 begin
-  Memo1.Items.Add(FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > ' + S);
+  text := FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > ' + S;
+  if Not WR then
+    Memo1.Items.Add(text);
   SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
+  // Пишем в лог
+  AssignFile(f, 'log.log');
+  If FileExists('log.log') then
+    Append(f)
+  else
+    rewrite(f);
+  WriteLn(f, text);
+  CloseFile(f);
 end;
 
 {*
@@ -147,7 +140,7 @@ var
   sProxy: String;
 begin
   sProxy := ReadSetting;
-  LogApp('Load Config: ' + sProxy);
+  LogApp('Load Config: ' + sProxy, False);
   if WinVerNum >= 62 then
   begin
     // Windows 8 и Старше
@@ -199,12 +192,12 @@ begin
   ProxyEnable := Reg.ReadInteger('ProxyEnable');
   if ProxyEnable = 1 then
   begin
-    StatusBar1.Panels[1].Text := 'Подключён';
+    StatusBar1.Panels[1].Text := ' Подключён';
     StatusBar1.Panels[1].ImageIndex := 1;
   end
   else
   begin
-    StatusBar1.Panels[1].Text := 'Отключён';
+    StatusBar1.Panels[1].Text := ' Отключён';
     StatusBar1.Panels[1].ImageIndex := 0;
   end;
   Result := ProxyEnable;
@@ -213,14 +206,17 @@ end;
 procedure TMainForm.BitBtn1Click(Sender: TObject);
 begin
   GetWind.Enabled := False;
+  RE_1.Enabled := False;
+  RE_2.Enabled := False;
+  BitBtn1.Enabled := False;
   if RE_1.Checked then
   begin
     Reg.WriteString('ProxyOverride', ProxyOverride);
     Reg.WriteString('ProxyServer', Proxy);
     Reg.WriteInteger('ProxyEnable', 1);
-    RE_1.Checked := False;
-    RE_2.Checked := True;
-    LogApp('Proxy Подключен');
+    StatusBar1.PopupMenu := nil;
+    MyThread := ExecuteCMD.Create(False);
+    MyThread.OnTerminate := OnEnabledTerminate;
   end
   else
   begin
@@ -229,26 +225,25 @@ begin
       Reg.WriteString('ProxyOverride', ProxyOverride);
       Reg.WriteString('ProxyServer', Proxy);
       Reg.WriteInteger('ProxyEnable', 0);
-      RE_1.Checked := True;
-      RE_2.Checked := False;
-      LogApp('Proxy Отключен');
+      StatusBar1.PopupMenu := nil;
+      MyThread := ExecuteCMD.Create(False);
+      MyThread.OnTerminate := OnDisabledTerminate;
     end;
   end;
-  GetWind.Enabled := True;
 end;
 
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   if Not MainCanClose then
      ChangeApplicationVisibility;
+  if MainCanClose then
+    LogApp('=========  Остановка Программы  ==========', True);
   CanClose := MainCanClose;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
-var
-  ProxyEnable: Integer;
-  I: Integer;
 begin
+  LogApp('=========   Запуск Программы    ==========', True);
   Application.OnMinimize := ApplicationMinimize;
   Memo1.Items.Clear;
   MainCanClose := False;
@@ -262,11 +257,13 @@ begin
   begin
     RE_2.Checked := True;
     RE_1.Checked := False;
+    LogApp('Proxy Подключен', False);
   end
   else
   begin
     RE_2.Checked := False;
     RE_1.Checked := True;
+    LogApp('Proxy Отключен', False);
   end;
   GetWind.Enabled := True;
 end;
@@ -292,29 +289,70 @@ end;
 *}
 procedure TMainForm.N2Click(Sender: TObject);
 begin
+  LogApp('Запуск Настройки программы', True);
   if SettingForm.ShowModal = 1 then
   begin
+    LogApp('Настройки возможно изменялись', True);
     Proxy := SetProxy;
     if Reg.ReadInteger('ProxyEnable') = 1 then
     begin
-      LogApp('Настройки будут приняты после переподключения');
+      LogApp('Настройки будут приняты после переподключения', False);
       Reg.WriteString('ProxyOverride', ProxyOverride);
       Reg.WriteString('ProxyServer', Proxy);
       Reg.WriteInteger('ProxyEnable', 0);
       RE_1.Checked := True;
       RE_2.Checked := False;
-      LogApp('Proxy Отключен');
+      LogApp('Proxy Отключен', False);
     end;
   end;
+  LogApp('Закрытие Настройки программы', True);
 end;
 
 {*
-  ** Закрытие Ghjuhfvvs
+  ** Закрытие Программы
 *}
 procedure TMainForm.N4Click(Sender: TObject);
 begin
   MainCanClose := True;
   MainForm.Close;
+end;
+
+procedure TMainForm.OnDisabledTerminate(Sender: TObject);
+begin
+  //LogApp('Кеш DNS сброшен', False);
+  LogApp('Proxy Отключен', False);
+
+  RE_1.Checked := True;
+  RE_2.Checked := False;
+  RE_1.Enabled := True;
+  RE_2.Enabled := True;
+  BitBtn1.Enabled := True;
+  GetWind.Enabled := True;
+
+  StatusBar1.PopupMenu := PopupMenu2;
+
+  StatusBar1.Panels[1].Text := ' Отключён';
+  StatusBar1.Panels[1].ImageIndex := 0;
+end;
+
+procedure TMainForm.OnEnabledTerminate(Sender: TObject);
+begin
+  Reg.WriteString('ProxyOverride', ProxyOverride);
+  Reg.WriteString('ProxyServer', Proxy);
+  Reg.WriteInteger('ProxyEnable', 1);
+  //LogApp('Кеш DNS сброшен', False);
+  LogApp('Proxy Подключен', False);
+                     
+  RE_1.Checked := False;
+  RE_2.Checked := True;
+  RE_1.Enabled := True;
+  RE_2.Enabled := True;
+  BitBtn1.Enabled := True;
+  GetWind.Enabled := True;
+
+  StatusBar1.PopupMenu := PopupMenu2;
+  StatusBar1.Panels[1].Text := ' Подключён';
+  StatusBar1.Panels[1].ImageIndex := 1;
 end;
 
 {*
@@ -337,7 +375,7 @@ begin
     ShowWindow(Handle, WinApi.Windows.SW_NORMAL);
     Application.Restore;
     Application.BringToFront;
-    N1.Caption := 'Свернуть';
+    N1.Caption := '&Свернуть';
     N1.ImageIndex := 3;
   end;
 end;
@@ -351,7 +389,7 @@ begin
   begin
     ShowWindow(Application.Handle,SW_HIDE);
     Hide;
-    N1.Caption := 'Развернуть';
+    N1.Caption := '&Развернуть';
     N1.ImageIndex := 4;
   end
   else
@@ -361,7 +399,7 @@ begin
     ShowWindow(Handle, WinApi.Windows.SW_NORMAL);
     Application.Restore;
     Application.BringToFront;
-    N1.Caption := 'Свернуть';
+    N1.Caption := '&Свернуть';
     N1.ImageIndex := 3;
   end;
 end;

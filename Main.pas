@@ -250,13 +250,13 @@ end;
 *}
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
-{*
+{**}
   if Not MainCanClose then
      ChangeApplicationVisibility;
   if MainCanClose then
     LogApp('=========  Остановка Программы  ==========', True);
   CanClose := MainCanClose;
-*}
+{**}
 end;
 
 {*

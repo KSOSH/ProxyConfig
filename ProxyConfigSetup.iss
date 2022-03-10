@@ -1,5 +1,5 @@
 #define MyAppName "Прокси ЕСПД"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "ProjectSoft"
 #define MyAppURL "https://github.com/KSOSH/ProxyConfig"
 #define MyAppExeName "ProxyConfig.exe"
@@ -21,6 +21,7 @@ DisableProgramGroupPage=yes
 OutputDir=setup
 OutputBaseFilename=proxy-setup
 SetupIconFile=ProxyConfig_Icon.ico
+UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

@@ -7,7 +7,8 @@ uses
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
   Vcl.ExtCtrls, Vcl.ComCtrls, Registry, Vcl.StdCtrls, Vcl.Buttons,
   Vcl.Menus, Setting, StrUtils, System.Types, System.RegularExpressions,
-  System.ImageList, Vcl.ImgList, SBPro, Vcl.XPMan, ShellAPI, ThreadUnit;
+  System.ImageList, Vcl.ImgList, SBPro, Vcl.XPMan, ShellAPI, ThreadUnit,
+  System.IOUtils;
 
 type
   TMainForm = class(TForm)
@@ -18,8 +19,6 @@ type
     RE_2: TRadioButton;
     PopupMenu1: TPopupMenu;
     N1: TMenuItem;
-    N3: TMenuItem;
-    N4: TMenuItem;
     PopupMenu2: TPopupMenu;
     N2: TMenuItem;
     Memo1: TListBox;
@@ -28,6 +27,11 @@ type
     Timer1: TTimer;
     XPManifest1: TXPManifest;
     Grops: TGroupBox;
+    N3: TMenuItem;
+    N4: TMenuItem;
+    Save: TSaveDialog;
+    N5: TMenuItem;
+    log1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure GetWindTimer(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
@@ -57,7 +61,7 @@ const
   CurrentPath = 'Software\Microsoft\Windows\CurrentVersion\Internet Settings';
   SettingPath = 'Software\ProxyConfigApp';
   ProxyOverride = '*.localhost;*.school;*.localschool;*.hostname;<local>';
-  ProxyVar = 'http=%ip:port%;https=%ip:port%;ftp=%ip:port%';
+  ProxyVar = 'http=%ip:port%;https=%ip:port%';
   ProxyTestURL = 'https://sp-kolosok.minobr63.ru/proxy.txt';
 
 var
@@ -71,6 +75,10 @@ var
   RegPort: TRegEx;
   Proxy: String;
   MyThread: ExecuteCMD;
+  InitialDir: String;
+  userDirectory: String;
+  logerPath: String;
+
 implementation
 
 {$R *.dfm}
@@ -81,16 +89,16 @@ implementation
 *}
 procedure TMainForm.LogApp(S: String; WR: Boolean);
 var
-  f : TextFile;
-  text   : string;
+  f: TextFile;
+  text: string;
 begin
   text := FormatDateTime('dd.mm.yyyy hh:mm:ss', Now) + ' > ' + S;
   if Not WR then
     Memo1.Items.Add(text);
   SendMessage(Memo1.Handle,WM_VSCROLL,SB_BOTTOM,0);
   // Пишем в лог
-  AssignFile(f, 'log.log');
-  If FileExists('log.log') then
+  AssignFile(f, logerPath);
+  If FileExists(logerPath) then
     Append(f)
   else
     rewrite(f);
@@ -194,15 +202,20 @@ begin
   begin
     StatusBar1.Panels[1].Text := ' Подключён';
     StatusBar1.Panels[1].ImageIndex := 1;
+    TrayIcon1.IconIndex := 7;
   end
   else
   begin
     StatusBar1.Panels[1].Text := ' Отключён';
     StatusBar1.Panels[1].ImageIndex := 0;
+    TrayIcon1.IconIndex := 6;
   end;
   Result := ProxyEnable;
 end;
 
+{*
+  ** Отключение/Подключение Proxy
+*}
 procedure TMainForm.BitBtn1Click(Sender: TObject);
 begin
   GetWind.Enabled := False;
@@ -232,18 +245,52 @@ begin
   end;
 end;
 
+{*
+  ** Закрытие программы
+*}
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
+{*
   if Not MainCanClose then
      ChangeApplicationVisibility;
   if MainCanClose then
     LogApp('=========  Остановка Программы  ==========', True);
   CanClose := MainCanClose;
+*}
 end;
 
+{*
+  ** Запуск программы
+*}
 procedure TMainForm.FormCreate(Sender: TObject);
+var
+  s: String;
 begin
+  userDirectory := TPath.Combine(TPath.GetHomePath, 'ProxyConfig');
+  if Not TDirectory.Exists(userDirectory) then
+    TDirectory.CreateDirectory(userDirectory);
+  logerPath := TPath.Combine(userDirectory, 'loger.log');
+  {*
+    ** Удалить файл если размер больще 100МБ
+  *}
+  if FileExists(logerPath) then
+  begin
+    try
+      for s in TDirectory.GetFiles(TPath.GetDirectoryName(logerPath), TSearchOption.soAllDirectories,
+          function(const Path: string; const SearchRec: TSearchRec): Boolean
+          begin
+            Result := SearchRec.Size > 104857600 // 100Mb  = 104857600
+          end
+      ) do DeleteFile(s);
+    finally
+
+    end;
+  end;
+
   LogApp('=========   Запуск Программы    ==========', True);
+
+  InitialDir := TPath.GetDirectoryName(TPath.GetDocumentsPath) + '\Desktop';
+
   Application.OnMinimize := ApplicationMinimize;
   Memo1.Items.Clear;
   MainCanClose := False;
@@ -258,12 +305,14 @@ begin
     RE_2.Checked := True;
     RE_1.Checked := False;
     LogApp('Proxy Подключен', False);
+    TrayIcon1.IconIndex := 7;
   end
   else
   begin
     RE_2.Checked := False;
     RE_1.Checked := True;
     LogApp('Proxy Отключен', False);
+    TrayIcon1.IconIndex := 6;
   end;
   GetWind.Enabled := True;
 end;
@@ -274,6 +323,50 @@ end;
 procedure TMainForm.GetWindTimer(Sender: TObject);
 begin
   GetCheckProxy();
+end;
+
+{*
+  ** Отключён Proxy
+*}
+procedure TMainForm.OnDisabledTerminate(Sender: TObject);
+begin
+  LogApp('Proxy Отключен', False);
+
+  RE_1.Checked := True;
+  RE_2.Checked := False;
+  RE_1.Enabled := True;
+  RE_2.Enabled := True;
+  BitBtn1.Enabled := True;
+  GetWind.Enabled := True;
+
+  StatusBar1.PopupMenu := PopupMenu2;
+
+  StatusBar1.Panels[1].Text := ' Отключён';
+  StatusBar1.Panels[1].ImageIndex := 0;
+  TrayIcon1.IconIndex := 6;
+end;
+
+{*
+  ** Подключён Proxy
+*}
+procedure TMainForm.OnEnabledTerminate(Sender: TObject);
+begin
+  Reg.WriteString('ProxyOverride', ProxyOverride);
+  Reg.WriteString('ProxyServer', Proxy);
+  Reg.WriteInteger('ProxyEnable', 1);
+  LogApp('Proxy Подключен', False);
+                     
+  RE_1.Checked := False;
+  RE_2.Checked := True;
+  RE_1.Enabled := True;
+  RE_2.Enabled := True;
+  BitBtn1.Enabled := True;
+  GetWind.Enabled := True;
+
+  StatusBar1.PopupMenu := PopupMenu2;
+  StatusBar1.Panels[1].Text := ' Подключён';
+  StatusBar1.Panels[1].ImageIndex := 1;
+  TrayIcon1.IconIndex := 7;
 end;
 
 {*
@@ -309,50 +402,42 @@ begin
 end;
 
 {*
-  ** Закрытие Программы
+  ** Выгрузка файла *.log
 *}
 procedure TMainForm.N4Click(Sender: TObject);
+var
+  ext: String;
+  path: String;
+  fileName: String;
+  oldFileName: String;
 begin
-  MainCanClose := True;
-  MainForm.Close;
-end;
+  Save.InitialDir := InitialDir;
+  Save.FileName := '';
+  if Not FileExists(logerPath) then
+  begin
+    Memo1.Items.SaveToFile(logerPath);
+  end;
+  if Save.Execute then
+  begin
+    ext := TPath.GetExtension(Save.FileName);
+    path := TPath.GetDirectoryName(Save.FileName);
+    fileName := ChangeFileExt(ExtractFileName(Save.FileName), '');
 
-procedure TMainForm.OnDisabledTerminate(Sender: TObject);
-begin
-  //LogApp('Кеш DNS сброшен', False);
-  LogApp('Proxy Отключен', False);
+    if(ext <> '')then
+    begin
+      oldFileName := path + '\' + fileName + '.log';
+    end
+    else
+    begin
+      oldFileName := path + '\' + fileName + ext;
+    end;
 
-  RE_1.Checked := True;
-  RE_2.Checked := False;
-  RE_1.Enabled := True;
-  RE_2.Enabled := True;
-  BitBtn1.Enabled := True;
-  GetWind.Enabled := True;
+    CopyFile(PWideChar(logerPath), PWideChar(oldFileName), false);
 
-  StatusBar1.PopupMenu := PopupMenu2;
-
-  StatusBar1.Panels[1].Text := ' Отключён';
-  StatusBar1.Panels[1].ImageIndex := 0;
-end;
-
-procedure TMainForm.OnEnabledTerminate(Sender: TObject);
-begin
-  Reg.WriteString('ProxyOverride', ProxyOverride);
-  Reg.WriteString('ProxyServer', Proxy);
-  Reg.WriteInteger('ProxyEnable', 1);
-  //LogApp('Кеш DNS сброшен', False);
-  LogApp('Proxy Подключен', False);
-                     
-  RE_1.Checked := False;
-  RE_2.Checked := True;
-  RE_1.Enabled := True;
-  RE_2.Enabled := True;
-  BitBtn1.Enabled := True;
-  GetWind.Enabled := True;
-
-  StatusBar1.PopupMenu := PopupMenu2;
-  StatusBar1.Panels[1].Text := ' Подключён';
-  StatusBar1.Panels[1].ImageIndex := 1;
+    ShellExecute(Application.Handle, 'OPEN', 'EXPLORER', PWideChar('/select, ' + oldFileName), '', SW_NORMAL);
+    Save.InitialDir := InitialDir;
+    Save.FileName := '';
+  end;
 end;
 
 {*
@@ -370,13 +455,7 @@ procedure TMainForm.TrayIcon1Click(Sender: TObject);
 begin
   if Not Visible then
   begin
-    ShowWindow(Application.Handle, SW_SHOW);
-    Show;
-    ShowWindow(Handle, WinApi.Windows.SW_NORMAL);
-    Application.Restore;
-    Application.BringToFront;
-    N1.Caption := '&Свернуть';
-    N1.ImageIndex := 3;
+    ChangeApplicationVisibility;
   end;
 end;
 
@@ -388,15 +467,15 @@ begin
   if Visible then
   begin
     ShowWindow(Application.Handle,SW_HIDE);
-    Hide;
     N1.Caption := '&Развернуть';
     N1.ImageIndex := 4;
+    Hide;
   end
   else
   begin
     ShowWindow(Application.Handle, SW_SHOW);
     Show;
-    ShowWindow(Handle, WinApi.Windows.SW_NORMAL);
+    ShowWindow(Handle, SW_NORMAL);
     Application.Restore;
     Application.BringToFront;
     N1.Caption := '&Свернуть';
@@ -409,7 +488,10 @@ end;
 *}
 procedure TMainForm.ApplicationMinimize(Sender: TObject);
 begin
-  ChangeApplicationVisibility;
+  ShowWindow(Application.Handle,SW_HIDE);
+  N1.Caption := '&Развернуть';
+  N1.ImageIndex := 4;
+  Hide;
 end;
 
 end.

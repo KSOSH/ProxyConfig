@@ -27,24 +27,28 @@ procedure ExecuteWait(const sProgramm: string; const sParams: string = ''; fHide
 var
   ShExecInfo: TShellExecuteInfo;
 begin
-  FillChar(ShExecInfo, sizeof(ShExecInfo), 0);
-  with ShExecInfo do
-  begin
-    cbSize := sizeof(ShExecInfo);
-    fMask := SEE_MASK_NOCLOSEPROCESS;
-    lpFile := PChar(sProgramm);
-    lpParameters := PChar(sParams);
-    lpVerb := 'open';
-    if (not fHide) then
-      nShow := SW_SHOW
-    else
-      nShow := SW_HIDE
-  end;
-  if (ShellExecuteEx(@ShExecInfo) and (ShExecInfo.hProcess <> 0)) then
   try
-    WaitForSingleObject(ShExecInfo.hProcess, INFINITE)
+    FillChar(ShExecInfo, sizeof(ShExecInfo), 0);
+    with ShExecInfo do
+    begin
+      cbSize := sizeof(ShExecInfo);
+      fMask := SEE_MASK_NOCLOSEPROCESS;
+      lpFile := PChar(sProgramm);
+      lpParameters := PChar(sParams);
+      lpVerb := 'open';
+      if (not fHide) then
+        nShow := SW_SHOW
+      else
+        nShow := SW_HIDE
+    end;
+    if (ShellExecuteEx(@ShExecInfo) and (ShExecInfo.hProcess <> 0)) then
+    try
+      WaitForSingleObject(ShExecInfo.hProcess, INFINITE)
+    finally
+      CloseHandle(ShExecInfo.hProcess);
+    end;
   finally
-    CloseHandle(ShExecInfo.hProcess);
+
   end;
 end;
 

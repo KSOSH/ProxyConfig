@@ -87,6 +87,7 @@
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
         <VerInfo_Keys>CompanyName=ГБОУ СОШ пос. Комсомольский;FileDescription=Включение/Отключение Proxy для подключение к ЕСПД на компьютерах ГБОУ СОШ пос. Комсомольский;FileVersion=1.0.0.0;InternalName=Proxy Configuration;LegalCopyright=©ProjectSoft 2008 - all right reserved;LegalTrademarks=®ProjectSoft;OriginalFilename=ProxyConfig.exe;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=Proxy Configuration;ProductVersion=1.0.0.0;Comments=Включение/Отключение Proxy для подключение к ЕСПД на компьютерах ГБОУ СОШ пос. Комсомольский</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <Manifest_File>(None)</Manifest_File>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>

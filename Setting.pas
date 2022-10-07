@@ -3,7 +3,8 @@ unit Setting;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.NumberBox, IpAdress,
   Vcl.Buttons, Registry, System.Types, StrUtils, System.RegularExpressions,
   Vcl.XPMan;
@@ -17,6 +18,9 @@ type
     BitBtn1: TBitBtn;
     BitBtn2: TBitBtn;
     XPManifest1: TXPManifest;
+    Label3: TLabel;
+    ProxyDisAddr: TMemo;
+    Ch1: TCheckBox;
     procedure FormShow(Sender: TObject);
     procedure BitBtn1Click(Sender: TObject);
   private
@@ -30,12 +34,13 @@ const
 
 var
   SettingForm: TSettingForm;
-  //MainForm: TMainForm;
+  // MainForm: TMainForm;
   Reg: TRegistry;
   RegIP: TRegEx;
   RegPort: TRegEx;
   tmpProxy: String;
   Values: TStringDynArray;
+
 implementation
 
 {$R *.dfm}
@@ -51,13 +56,14 @@ begin
   Reg := TRegistry.Create;
   Reg.RootKey := HKEY_CURRENT_USER;
   Reg.OpenKey(CurrentPath, true);
-  Reg.WriteString('ProxyServer', IpAdress.IPAdress + ':' + IntToStr(Port.ValueInt));
+  Reg.WriteString('ProxyServer', IpAdress.IpAdress + ':' +
+    IntToStr(Port.ValueInt));
   Reg.Free;
 end;
 
 procedure TSettingForm.FormShow(Sender: TObject);
 begin
-  //Port.ValueInt;
+  // Port.ValueInt;
   RegIP := TRegEx.Create('^\d{1,3}\.\d{1,3}\.\d{1,3}.\d{1,3}$');
   RegPort := TRegEx.Create('^\d{1,4}$');
   Reg := TRegistry.Create;
@@ -71,13 +77,13 @@ begin
   end;
   Values := SplitString(tmpProxy, ':');
   if Length(Values) < 2 then
-     Values[1] := '80';
+    Values[1] := '80';
   if Not RegIP.IsMatch(Values[0]) then
-     Values[0] := '127.0.0.1';
+    Values[0] := '127.0.0.1';
   if Not RegPort.IsMatch(Values[1]) then
-     Values[1] := '80';
+    Values[1] := '80';
   Reg.WriteString('ProxyServer', Values[0] + ':' + Values[1]);
-  IpAdress.IPAdress := Values[0];
+  IpAdress.IpAdress := Values[0];
   Port.ValueInt := StrToInt(Values[1]);
   Reg.Free;
 end;

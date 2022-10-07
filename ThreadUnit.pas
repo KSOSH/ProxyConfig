@@ -20,10 +20,11 @@ implementation
 uses
   Main;
 
-{*
+{ *
   ** Для запуска cmd
-*}
-procedure ExecuteWait(const sProgramm: string; const sParams: string = ''; fHide: Boolean = false);
+  * }
+procedure ExecuteWait(const sProgramm: string; const sParams: string = '';
+  fHide: Boolean = false);
 var
   ShExecInfo: TShellExecuteInfo;
 begin
@@ -42,11 +43,11 @@ begin
         nShow := SW_HIDE
     end;
     if (ShellExecuteEx(@ShExecInfo) and (ShExecInfo.hProcess <> 0)) then
-    try
-      WaitForSingleObject(ShExecInfo.hProcess, INFINITE)
-    finally
-      CloseHandle(ShExecInfo.hProcess);
-    end;
+      try
+        WaitForSingleObject(ShExecInfo.hProcess, INFINITE)
+      finally
+        CloseHandle(ShExecInfo.hProcess);
+      end;
   finally
 
   end;
@@ -57,33 +58,31 @@ end;
 procedure ExecuteCMD.Execute;
 begin
   Synchronize(
-      procedure
-      begin
-        MainForm.LogApp('Сброс кеша DNS', False);
-      end
-  );
-  ExecuteWait('cmd', '/c ipconfig /flushdns', True);
+    procedure
+    begin
+      MainForm.LogApp('Сброс кеша DNS', false);
+    end);
+  ExecuteWait('ipconfig.exe', '/flushdns', True);
   Synchronize(
-      procedure
-      begin
-        MainForm.LogApp('Очистка ARP', False);
-      end
-  );
-  ExecuteWait('cmd', '/c arp -d', True);
+    procedure
+    begin
+      MainForm.LogApp('Очистка ARP', false);
+    end);
+  ExecuteWait('arp.exe', '-d', True);
   Synchronize(
-      procedure
-      begin
-        MainForm.LogApp('Сброс IP адресов', False);
-      end
-  );
-  ExecuteWait('cmd', '/c ipconfig /release && ipconfig /renew ', True);
+    procedure
+    begin
+      MainForm.LogApp('Сброс IP адресов', false);
+    end);
+  ExecuteWait('ipconfig.exe', '/release', True);
+  ExecuteWait('ipconfig.exe', '/renew ', True);
   Synchronize(
-      procedure
-      begin
-        MainForm.LogApp('Обновление профиля', False);
-      end
-  );
-  ExecuteWait('cmd', '/c RUNDLL32.EXE user32.dll,UpdatePerUserSystemParameters ', True);
+    procedure
+    begin
+      MainForm.LogApp('Обновление профиля', false);
+    end);
+  ExecuteWait('RUNDLL32.EXE',
+    'user32.dll,UpdatePerUserSystemParameters ', True);
 end;
 
 end.
